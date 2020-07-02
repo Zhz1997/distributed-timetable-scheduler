@@ -2,10 +2,10 @@ package main
 
 //
 // start a worker process, which is implemented
-// in ../mr/worker.go. typically there will be
+// in ../ts/worker.go. typically there will be
 // multiple worker processes, talking to one master.
 //
-// go run mrworker.go wc.so
+// go run tsworker.go wc.so
 //
 // Please do not change this file.
 //
@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"os"
 
-	"../mr"
+	"../ts"
 )
 
 func main() {
@@ -23,5 +23,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	mr.Worker()
+	ts.Worker()
 }

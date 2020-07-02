@@ -2,9 +2,9 @@ package main
 
 //
 // start the master process, which is implemented
-// in ../mr/master.go
+// in ../ts/master.go
 //
-// go run mrmaster.go pg*.txt
+// go run tsmaster.go pg*.txt
 //
 // Please do not change this file.
 //
@@ -14,16 +14,16 @@ import (
 	"os"
 	"time"
 
-	"../mr"
+	"../ts"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: mrmaster inputfiles...\n")
+		fmt.Fprintf(os.Stderr, "Usage: tsmaster inputfiles...\n")
 		os.Exit(1)
 	}
 
-	m := mr.MakeMaster(os.Args[1:], 10)
+	m := ts.MakeMaster(os.Args[1:], 10)
 	for m.Done() == false {
 		time.Sleep(time.Second)
 	}
