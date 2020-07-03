@@ -9,6 +9,7 @@ import (
 	"net/rpc"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Master struct {
@@ -17,6 +18,8 @@ type Master struct {
 }
 
 var courseList []Course
+var roomList []Room
+var timeSlotList []TimeSlot
 
 func (m *Master) RPCHandler(args *RPCArgs, reply *RPCReply) error {
 
@@ -54,17 +57,30 @@ func (m *Master) Done() bool {
 // main/tsmaster.go calls this function.
 // nReduce is the number of reduce tasks to use.
 //
-func MakeMaster(files []string, nReduce int) *Master {
-	fmt.Println(files[0])
-	lines, err := ReadCsv(files[0])
+func MakeMaster(filePath string, nReduce int) *Master {
+	fmt.Println(filePath)
+	courses, err := ReadCsv(filePath + "/courses.csv")
 	if err != nil {
 		panic(err)
 	}
-	lines = lines[1:]
+	courses = courses[1:]
+	SetCourses(courses)
 
-	SetCourses(lines)
+	rooms, err := ReadCsv(filePath + "/rooms.csv")
+	if err != nil {
+		panic(err)
+	}
+	rooms = rooms[1:]
+	SetRooms(rooms)
 
-	fmt.Println(courseList)
+	timeSlots, err := ReadCsv(filePath + "/timeSlots.csv")
+	if err != nil {
+		panic(err)
+	}
+	timeSlots = timeSlots[1:]
+	SetTimeSlots(timeSlots)
+
+	fmt.Println(timeSlotList)
 
 	m := Master{}
 
@@ -121,5 +137,49 @@ func SetCourses(lines [][]string) {
 			timePref: curTimePref,
 		}
 		courseList = append(courseList, data)
+	}
+}
+
+func SetRooms(lines [][]string) {
+	for _, line := range lines {
+		curID, err := strconv.Atoi(line[0])
+		if err != nil {
+			panic(err)
+		}
+
+		curCapLevel, err := strconv.Atoi(line[1])
+		if err != nil {
+			panic(err)
+		}
+
+		data := Room{
+			id:       curID,
+			capLevel: curCapLevel,
+		}
+		roomList = append(roomList, data)
+	}
+}
+
+func SetTimeSlots(lines [][]string) {
+	for _, line := range lines {
+		curID, err := strconv.Atoi(line[0])
+		if err != nil {
+			panic(err)
+		}
+
+		temp := strings.Split(line[2], "&")
+
+		curStartTime, err := strconv.Atoi(temp[0])
+		if err != nil {
+			panic(err)
+		}
+
+		data := TimeSlot{
+			id:         curID,
+			startTime:  curStartTime,
+			duration:   len(temp),
+			isOccupied: false,
+		}
+		timeSlotList = append(timeSlotList, data)
 	}
 }

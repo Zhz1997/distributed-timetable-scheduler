@@ -6,9 +6,10 @@ type Room struct {
 }
 
 type TimeSlot struct {
-	id        int
-	startTime int
-	duration  int
+	id         int
+	startTime  int
+	duration   int
+	isOccupied bool
 }
 
 type Course struct {
