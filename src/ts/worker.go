@@ -4,33 +4,51 @@ import (
 	"fmt"
 	"log"
 	"net/rpc"
+	"time"
 )
 
 func Worker() {
-	fmt.Println("worker start")
-}
 
-//
-// example function to show how to make an RPC call to the master.
-//
-// the RPC argument and reply types are defined in rpc.go.
-//
-func CallExample() {
+	args := RPCArgs{}
+	args.IsNewChromExist = false
+	args.CurGeneration = -1
+	reply := RPCReply{}
 
-	// declare an argument structure.
-	args := ExampleArgs{}
+	for reply.TaskType != "done" {
+		time.Sleep(3 * time.Millisecond)
+		call("Master.RPCHandler", &args, &reply)
+		fmt.Println(reply.CurGeneration)
+		if reply.TaskType == "reassign" {
+			args.CurGeneration = reply.CurGeneration
+			fmt.Println("reassigned")
+		} else if reply.TaskType == "wait" {
 
-	// fill in the argument(s).
-	args.X = 99
+		} else {
+			fmt.Println("asdfasd")
+			args.NewChrom = CreateChromForNextGeneration(reply.PrevGeneration, reply.CourseList, reply.TimeSlotList, reply.RoomList)
+			args.IsNewChromExist = true
+			PrintChrom(args.NewChrom)
+		}
+	}
+	// call("Master.RPCHandler", &args, &reply)
+	// //fmt.Println(reply.CourseList)
+	// nextGen := CreateNextGeneration(reply.PrevGeneration, reply.CourseList, reply.TimeSlotList, reply.RoomList)
 
-	// declare a reply structure.
-	reply := ExampleReply{}
+	// bestFitValue := float64(0)
+	// bestChromId := 0
 
-	// send the RPC request, wait for the reply.
-	call("Master.Example", &args, &reply)
+	// for _, chrom := range nextGen {
+	// 	if chrom.FitnessScore > bestFitValue {
+	// 		bestChromId = chrom.Id
+	// 		bestFitValue = chrom.FitnessScore
+	// 	}
+	// }
 
-	// reply.Y should be 100.
-	fmt.Printf("reply.Y %v\n", reply.Y)
+	// fmt.Println("------------------------------")
+	// PrintGeneration(nextGen)
+	// fmt.Println("bestFitValue in initial generation is ", bestFitValue, " chrom id is ", bestChromId)
+
+	// fmt.Println(PrevGeneration)
 }
 
 //

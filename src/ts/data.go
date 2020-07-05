@@ -1,35 +1,35 @@
 package ts
 
 type Room struct {
-	id       int
-	capLevel int
+	Id       int
+	CapLevel int
 }
 
 type TimeSlot struct {
-	id         int
-	startTime  int
-	duration   int
-	isOccupied bool
+	Id         int
+	StartTime  int
+	Duration   int
+	IsOccupied bool
 }
 
 type Course struct {
-	id       int
-	capLevel int
-	duration int
-	timePref int
+	Id       int
+	CapLevel int
+	Duration int
+	TimePref int
 }
 
 type Gene struct {
-	courseID     int
-	roomID       int
-	timeSlotID   int
-	durationPref int
+	CourseID     int
+	RoomID       int
+	TimeSlotID   int
+	DurationPref int
 }
 
 type Chrom struct {
-	id           int
-	genes        []Gene
-	fitnessScore int
-	scv          int
-	hcv          int
+	Id           int
+	Genes        []Gene
+	FitnessScore float64
+	Scv          int
+	Hcv          int
 }

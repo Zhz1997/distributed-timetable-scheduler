@@ -11,40 +11,20 @@ import (
 	"strconv"
 )
 
-//
-// example to show how to declare the arguments
-// and reply for an RPC.
-//
-
-type ExampleArgs struct {
-	X int
-}
-
-type ExampleReply struct {
-	Y int
-}
-
 // Add your RPC definitions here.
 type RPCArgs struct {
-	FinishedIndex int
+	CurGeneration   int
+	IsNewChromExist bool
+	NewChrom        Chrom
 }
 
 type RPCReply struct {
-	NameOfAssignedFile string
-	TaskNumber         string
-	IsJobFinished      bool
-	NReduce            int
-	NMap               int
-	TaskType           string
-}
-
-type RPCWorkerResponseArgs struct {
-	FinishedTaskType string
-	FinishedIndex    int
-}
-
-type RPCWorkerResponseReply struct {
-	IsReceivedByMaster bool
+	TaskType       string
+	CurGeneration  int
+	CourseList     []Course
+	TimeSlotList   []TimeSlot
+	RoomList       []Room
+	PrevGeneration []Chrom
 }
 
 // Cook up a unique-ish UNIX-domain socket name

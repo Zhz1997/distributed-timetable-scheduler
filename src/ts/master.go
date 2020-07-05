@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Master struct {
@@ -20,10 +21,91 @@ type Master struct {
 var courseList []Course
 var roomList []Room
 var timeSlotList []TimeSlot
+var prevGeneration []Chrom
+var wipGen []Chrom
+
+var genSize int = 20
+var numberOfGen int = 3000
+var curGenCount int = 0
+var curGenChromCount int = 0
 
 func (m *Master) RPCHandler(args *RPCArgs, reply *RPCReply) error {
+	if curGenCount == numberOfGen {
+		reply.TaskType = "done"
+
+		return nil
+	}
+	// accept chrom from worker and reassign
+	if args.CurGeneration == curGenCount {
+		// fmt.Println("----------------------------------")
+		// PrintGeneration(wipGen)
+		// fmt.Println("----------------------------------")
+		reply.TaskType = "train"
+
+		reply.CourseList = courseList
+		reply.RoomList = roomList
+		reply.TimeSlotList = timeSlotList
+		reply.PrevGeneration = prevGeneration
+		reply.CurGeneration = curGenCount
+
+		if args.IsNewChromExist && len(wipGen) < genSize {
+			wipGen = append(wipGen, args.NewChrom)
+			curGenChromCount = curGenChromCount + 1
+		}
+
+		return nil
+
+	} else { //reject the chrom from worker, and tell worker cur gen count
+		reply.TaskType = "reassign"
+		reply.CurGeneration = curGenCount
+
+		return nil
+	}
 
 	return nil
+}
+
+func Monitor() {
+	for true {
+		time.Sleep(1 * time.Millisecond)
+		if len(wipGen) >= genSize {
+			wipGen = wipGen[:genSize]
+			bestChromInPrevGen := GetBestChromFromGen(prevGeneration)
+			wipGen = SetID(wipGen)
+			prevGeneration = wipGen
+			PrintBestInPrev()
+			wipGen = nil
+			wipGen = append(wipGen, bestChromInPrevGen)
+			curGenCount = curGenCount + 1
+		}
+	}
+}
+
+func PrintBestInPrev() {
+
+	bestFitValue := float64(0)
+	bestChromId := 0
+
+	for _, chrom := range prevGeneration {
+		if chrom.FitnessScore > bestFitValue {
+			bestChromId = chrom.Id
+			bestFitValue = chrom.FitnessScore
+		}
+	}
+
+	fmt.Println("------------------------------")
+	PrintGeneration(prevGeneration)
+	fmt.Println("bestFitValue in generation ", curGenCount, " ", "is ", bestFitValue, " chrom id is ", bestChromId)
+}
+
+func SetID(gen []Chrom) []Chrom {
+	var result []Chrom
+	result = gen
+	for i := range result {
+		result[i].Id = i + 1
+	}
+
+	return result
 }
 
 //
@@ -58,7 +140,49 @@ func (m *Master) Done() bool {
 // nReduce is the number of reduce tasks to use.
 //
 func MakeMaster(filePath string, nReduce int) *Master {
-	fmt.Println(filePath)
+
+	WriteDataIntoLists(filePath)
+
+	// fmt.Println(courseList)
+	// fmt.Println(roomList)
+	// fmt.Println(timeSlotList)
+
+	var firstGeneration []Chrom
+	firstGeneration = CreateFirstGeneration(courseList, timeSlotList, roomList)
+	//fmt.Println(len(firstGeneration))
+	//PrintGeneration(firstGeneration)
+	// for _, chrom := range firstGeneration {
+	// 	for _, gene := range chrom.genes {
+	// 		PrintGene(gene)
+	// 	}
+	// }
+
+	bestFitValue := float64(0)
+	bestChromId := 0
+
+	for _, chrom := range firstGeneration {
+		if chrom.FitnessScore > bestFitValue {
+			bestChromId = chrom.Id
+			bestFitValue = chrom.FitnessScore
+		}
+	}
+
+	prevGeneration = firstGeneration
+
+	bestChromInPrevGen := GetBestChromFromGen(prevGeneration)
+	wipGen = append(wipGen, bestChromInPrevGen)
+	fmt.Println("------------------------------")
+	PrintGeneration(firstGeneration)
+	fmt.Println("bestFitValue in initial generation is ", bestFitValue, " chrom id is ", bestChromId)
+
+	m := Master{}
+
+	go Monitor()
+	m.server()
+	return &m
+}
+
+func WriteDataIntoLists(filePath string) {
 	courses, err := ReadCsv(filePath + "/courses.csv")
 	if err != nil {
 		panic(err)
@@ -79,13 +203,6 @@ func MakeMaster(filePath string, nReduce int) *Master {
 	}
 	timeSlots = timeSlots[1:]
 	SetTimeSlots(timeSlots)
-
-	fmt.Println(timeSlotList)
-
-	m := Master{}
-
-	m.server()
-	return &m
 }
 
 // ReadCsv accepts a file and returns its content as a multi-dimentional type
@@ -131,10 +248,10 @@ func SetCourses(lines [][]string) {
 		}
 
 		data := Course{
-			id:       curID,
-			capLevel: curCapLevel,
-			duration: curDuration,
-			timePref: curTimePref,
+			Id:       curID,
+			CapLevel: curCapLevel,
+			Duration: curDuration,
+			TimePref: curTimePref,
 		}
 		courseList = append(courseList, data)
 	}
@@ -153,8 +270,8 @@ func SetRooms(lines [][]string) {
 		}
 
 		data := Room{
-			id:       curID,
-			capLevel: curCapLevel,
+			Id:       curID,
+			CapLevel: curCapLevel,
 		}
 		roomList = append(roomList, data)
 	}
@@ -175,10 +292,10 @@ func SetTimeSlots(lines [][]string) {
 		}
 
 		data := TimeSlot{
-			id:         curID,
-			startTime:  curStartTime,
-			duration:   len(temp),
-			isOccupied: false,
+			Id:         curID,
+			StartTime:  curStartTime,
+			Duration:   len(temp),
+			IsOccupied: false,
 		}
 		timeSlotList = append(timeSlotList, data)
 	}
